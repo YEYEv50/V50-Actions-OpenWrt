@@ -17,9 +17,9 @@ on:
         required: false
 
 env:
-  # 源码仓库与分支（按需修改，例如换成 LibWrt / Lean LEDE）
-  REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: master
+  # 源码仓库与分支（按需修改，须与 .config 匹配）
+  REPO_URL: https://github.com/LiBwrt/LibWrt
+  REPO_BRANCH: 25.12-nss
   # 主目录下的配置文件（相对仓库根目录）
   CONFIG_FILE: .config
   FEEDS_FILE: feeds.conf.default
