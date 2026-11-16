@@ -48,3 +48,12 @@ fi
 
 # 按需追加 feed
 #echo 'src-git helloworld https://github.com/fw876/helloworld' >> feeds.conf.default
+
+# 剔除 qca-ppe-qos（硬编码在子目标 DEFAULT_PACKAGES，不从 .config 层面禁用会被 defconfig 加回）
+PPE_QOS_MK=target/linux/qualcommax/Makefile
+if [ -f "$PPE_QOS_MK" ]; then
+	sed -i 's/qca-ppe-qos luci-app-qca-ppe-qos luci-i18n-qca-ppe-qos-zh-cn//' "$PPE_QOS_MK"
+	grep -q "qca-ppe-qos" "$PPE_QOS_MK" && echo "警告: qca-ppe-qos 仍残留在 $PPE_QOS_MK" || echo "qca-ppe-qos 已从 DEFAULT_PACKAGES 剔除"
+else
+	echo "警告: $PPE_QOS_MK 不存在，跳过 qca-ppe-qos 剔除"
+fi
