@@ -1,0 +1,147 @@
+#
+# V50-Actions-OpenWrt : 云编译固件
+# 运行环境: ubuntu-24.04
+# 主目录的 feeds.conf.default 与 .config 由本流程直接读取调用
+# 不同设备/源码版本：用不同分支维护各自的 .config 等配置文件，workflow 保持通用
+#
+
+name: Build OpenWrt
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_release:
+        description: "同时发布到 Releases"
+        type: boolean
+        default: false
+        required: false
+
+env:
+  # 源码仓库与分支（按需修改，例如换成 LibWrt / Lean LEDE）
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: master
+  # 主目录下的配置文件（相对仓库根目录）
+  CONFIG_FILE: .config
+  FEEDS_FILE: feeds.conf.default
+  DIY_P1_SH: diy-part1.sh
+  DIY_P2_SH: diy-part2.sh
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: 检出本仓库（workflow / diy 脚本 / feeds / .config）
+        uses: actions/checkout@v4
+
+      - name: 释放磁盘空间（runner 默认可用空间不足）
+        run: |
+          sudo rm -rf /etc/mysql /etc/php \
+            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force > /dev/null 2>&1 || true
+          sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
+          df -hT
+
+      - name: 初始化环境并安装编译依赖（ubuntu-24.04）
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+            g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+            libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev \
+            libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp \
+            nano ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+            python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+            upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+          sudo timedatectl set-timezone "$TZ"
+          echo "COMPILE_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: 克隆 OpenWrt 源码
+        working-directory: ${{ github.workspace }}
+        run: |
+          df -hT "$PWD"
+          git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt
+          cd openwrt
+          echo "OPENWRT_PATH=$PWD" >> "$GITHUB_ENV"
+
+      - name: 载入 feeds.conf.default 并执行 diy-part1.sh
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          [ -f "$GITHUB_WORKSPACE/$FEEDS_FILE" ] && \
+            cp -f "$GITHUB_WORKSPACE/$FEEDS_FILE" feeds.conf.default
+          [ -f "$GITHUB_WORKSPACE/$DIY_P1_SH" ] && {
+            chmod +x "$GITHUB_WORKSPACE/$DIY_P1_SH"
+            cd "$OPENWRT_PATH" && "$GITHUB_WORKSPACE/$DIY_P1_SH"
+          }
+          cat feeds.conf.default
+
+      - name: 更新并安装 feeds
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 执行 diy-part2.sh
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          [ -f "$GITHUB_WORKSPACE/$DIY_P2_SH" ] && {
+            chmod +x "$GITHUB_WORKSPACE/$DIY_P2_SH"
+            cd "$OPENWRT_PATH" && "$GITHUB_WORKSPACE/$DIY_P2_SH"
+          }
+
+      - name: 载入 .config 并生成完整配置
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ] && \
+            cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
+          make defconfig
+          ./scripts/diffconfig.sh > seed.config
+          grep -E "^CONFIG_TARGET" .config || true
+
+      - name: 预下载依赖源码包
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 编译固件
+        working-directory: ${{ github.workspace }}/openwrt
+        run: |
+          echo -e "$(nproc) thread compile"
+          make -j"$(nproc)" || make -j1 V=s
+          echo "COMPILE_END=$(date +%s)" >> "$GITHUB_ENV"
+          echo "编译耗时: $(( (COMPILE_END - COMPILE_START) / 60 )) 分钟"
+
+      - name: 整理固件产物
+        run: |
+          cd "$OPENWRT_PATH"/bin/targets/*/*
+          rm -rf packages
+          echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
+          ls -lah
+
+      - name: 上传固件到 Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt-Firmware-${{ env.REPO_BRANCH }}-${{ github.run_number }}
+          path: ${{ env.FIRMWARE }}
+
+      - name: 发布到 Releases
+        if: ${{ inputs.upload_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: openwrt-${{ env.REPO_BRANCH }}-${{ github.run_number }}
+          name: OpenWrt 固件 ${{ env.REPO_BRANCH }} - run #${{ github.run_number }}
+          body: |
+            - 源码: ${{ env.REPO_URL }} @ ${{ env.REPO_BRANCH }}
+            - 触发分支: ${{ github.ref_name }}
+          files: ${{ env.FIRMWARE }}/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
