@@ -13,5 +13,38 @@ else
 	echo "警告: $IPQ60XX_MK 不存在，跳过 zn_m2 修改"
 fi
 
+# ZN M2 无 WiFi：设备树叠加 nowifi 内存布局
+# 基础定义（0102-wcss 补丁）给 WiFi Q6 预留 64MB@0x4ab00000，无 WiFi 时纯浪费；
+# 压到 8MB 并把 etr/m3_dump/ramoops 错开到 0x4b3~0x4b5，释放约 56MB。绝不手动压 16MB（会与保留区重叠导致无法启动）。
+M2_DTS=target/linux/qualcommax/dts/ipq6000-m2.dts
+if [ -f "$M2_DTS" ]; then
+	cat >> "$M2_DTS" << 'EOF'
+
+/* nowifi 内存布局：禁用 WiFi，压缩 Q6 保留区 */
+&wifi {
+	status = "disabled";
+};
+
+&q6_region {
+	reg = <0x0 0x4ab00000 0x0 0x800000>;
+};
+
+&q6_etr_region {
+	reg = <0x0 0x4b300000 0x0 0x100000>;
+};
+
+&m3_dump_region {
+	reg = <0x0 0x4b400000 0x0 0x100000>;
+};
+
+&ramoops_region {
+	reg = <0x0 0x4b500000 0x0 0x100000>;
+};
+EOF
+	tail -30 "$M2_DTS"
+else
+	echo "警告: $M2_DTS 不存在，跳过 nowifi 内存布局"
+fi
+
 # 按需追加 feed
 #echo 'src-git helloworld https://github.com/fw876/helloworld' >> feeds.conf.default
