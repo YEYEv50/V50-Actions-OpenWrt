@@ -14,11 +14,11 @@ rm -rf feeds/luci/applications/luci-app-passwall
 #rm -rf feeds/packages/lang/golang
 
 # 独立插件（顶层 package/ 优先于 feed）
-git clone https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
-git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
-git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
-git clone https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
-git clone https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
+git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
+git clone --depth 1 https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
+git clone --depth 1 https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
+git clone --depth 1 https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
+git clone --depth 1 https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
 
 # 按需启用
 #git clone https://github.com/sbwml/packages_lang_golang -b 27.x feeds/packages/lang/golang

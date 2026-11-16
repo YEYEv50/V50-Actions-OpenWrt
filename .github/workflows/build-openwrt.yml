@@ -105,7 +105,7 @@ jobs:
       - name: 预下载依赖源码包
         working-directory: ${{ github.workspace }}/openwrt
         run: |
-          make download -j8
+          make download -j8 || make download -j1 V=s
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
 
