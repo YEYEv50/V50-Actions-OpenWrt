@@ -16,6 +16,10 @@ on:
         default: false
         required: false
 
+# 允许 GITHUB_TOKEN 创建 Release（否则发布步骤报 Resource not accessible by integration）
+permissions:
+  contents: write
+
 env:
   # 源码仓库与分支（按需修改，须与 .config 匹配）
   REPO_URL: https://github.com/LiBwrt/LibWrt
