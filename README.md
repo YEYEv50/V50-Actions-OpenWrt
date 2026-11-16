@@ -1,6 +1,26 @@
-# V50-Actions-OpenWrt
+# V50-Actions-OpenWrt · ZN-M2-25.12 分支
 
-使用 GitHub Actions 云编译 OpenWrt 固件。运行环境 `ubuntu-24.04`，按 **分支管理设备**：每个设备/源码版本一个 Git 分支，分支内存放各自的 `.config`、`feeds.conf.default` 与 DIY 脚本，workflow 保持通用。
+使用 GitHub Actions 云编译 OpenWrt 固件，运行环境 `ubuntu-24.04`，按 **分支管理设备/源码**：每个分支存放各自的 `.config`、`feeds.conf.default` 与 DIY 脚本，workflow 保持通用。
+
+## 本分支构建目标
+
+| 项目 | 内容 |
+|------|------|
+| 设备 | ZN-M2（Qualcomm IPQ6000，qualcommax/ipq60xx） |
+| 源码 | [LiBwrt/LibWrt](https://github.com/LiBwrt/LibWrt) `25.12-nss` |
+| 包管理器 | APK |
+| 硬件加速 | **ECM/NSS 架构**（`/sys/kernel/debug/ecm/ecm_db/connection_count` 可查加速连接数） |
+| 特色插件 | luci-app-passwall、argon 系主题、smartdns、ddns-go、vlmcsd 等 |
+
+## 本分支特有处理
+
+- `KERNEL_WERROR` 已预防性关闭：从 LibWrt 继承的该选项在源码更新内核后可能触发 `-Werror` 致命编译错误（LEDE 分支已实际翻车过一次，同样来自 LibWrt 继承）
+- 首次构建（Run #2）成功；ECM/NSS 加速与 APK 包管理均为该源码分支的原生方案
+
+## 已知事项
+
+- APK 源码托管于 gitlab.alpinelinux.org，下载阶段偶发网络抖动导致 `package/system/apk failed to build`，重跑即可自愈；若频繁出现可参考 LEDE 分支切回 opkg
+- 恢复本固件的备份到其他架构固件（如 PPE/flowtable）时，需清理 ECM/NSS 专属配置（`etc/config/ecm`、`nss`、`skb_recycler`、`smp_affinity` 及 `etc/modules.conf` 中的 ecm 模块参数），避免加速机制冲突
 
 ## 使用方法
 
@@ -28,17 +48,3 @@
 → diy-part1.sh → feeds update/install → diy-part2.sh
 → 载入 .config → make defconfig → make download → make
 ```
-
-## 添加新设备
-
-1. 基于现有分支新建分支（分支名建议 `<设备>-<源码版本>`）
-2. 替换分支内的 `.config`（本地 `make menuconfig` 导出，或先跑通 `make defconfig` 后用 `./scripts/diffconfig.sh` 生成精简种子）
-3. 按需调整 `feeds.conf.default` 和两个 DIY 脚本
-4. workflow 无需改动；若源码仓库/分支不同，修改 workflow 顶部 `env` 的 `REPO_URL` / `REPO_BRANCH`
-
-## 注意事项
-
-- workflow 固定 `ubuntu-24.04`，不要用 `ubuntu-latest`（其默认系统会滚动升级，产物不可复现）
-- 依赖清单与 ImmortalWrt 官方 README 对齐，noble 已移除的包名（如 `libncursesw5-dev`）勿加回
-- `diy-part1.sh` 中对 `feeds/` 目录的改动会被 `feeds update` 覆盖，修改 feed 内的包请在 `diy-part2.sh` 操作
-- `.config` 请使用 LF 换行符，避免 `make defconfig` 解析异常
