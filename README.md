@@ -1,6 +1,37 @@
-# V50-Actions-OpenWrt
+# V50-Actions-OpenWrt · VIKINGYFY 分支
 
-使用 GitHub Actions 云编译 OpenWrt 固件。运行环境 `ubuntu-24.04`，按 **分支管理设备**：每个设备/源码版本一个 Git 分支，分支内存放各自的 `.config`、`feeds.conf.default` 与 DIY 脚本，workflow 保持通用。
+使用 GitHub Actions 云编译 OpenWrt 固件，运行环境 `ubuntu-24.04`，按 **分支管理设备/源码**：每个分支存放各自的 `.config`、`feeds.conf.default` 与 DIY 脚本，workflow 保持通用。
+
+## 本分支构建目标
+
+| 项目 | 内容 |
+|------|------|
+| 设备 | ZN-M2（Qualcomm IPQ6000，qualcommax/ipq60xx） |
+| 源码 | [VIKINGYFY/immortalwrt](https://github.com/VIKINGYFY/immortalwrt) `owrt`（ImmortalWrt fork） |
+| 内核 | 6.18 |
+| 包管理器 | APK |
+| 硬件加速 | **PPE（qca-ppe）+ 内核 flowtable 硬件卸载**（`flow_offloading_hw`，debugfs 见 `/sys/kernel/debug/3a000000.ppe/`） |
+| 特色插件 | luci-app-passwall、argon 系主题、smartdns、ddns-go、vlmcsd 等 |
+
+## 本分支特有处理（diy-part1.sh 已内置）
+
+- **剔除 qca-ppe-qos 三件套**：`qca-ppe-qos`、`luci-app-qca-ppe-qos`、`luci-i18n-qca-ppe-qos-zh-cn` 被硬编码在源码 `target/linux/qualcommax/Makefile` 的 DEFAULT_PACKAGES 中（设备默认包，仅删 `.config` 会被 defconfig 加回），脚本用 sed 从源码层面剔除并自带残留检查
+
+## 实测验证（2026-11-17）
+
+- 真实互联网流量下 conntrack 出现 `[HW_OFFLOAD]` 标记（PPE 硬件卸载专属），双向包计数持续增长
+- PPE `active_flows` 4~6/2048，卸载生效期间路由器 CPU 接近 100% idle
+- 对照：PC→路由器本机终止流（不可卸载路径）941 Mbps 时 CPU sirq 23~26%
+
+## 已知事项
+
+- APK 源码托管于 gitlab.alpinelinux.org，下载阶段偶发网络抖动导致 `package/system/apk failed to build`，重跑即可自愈
+- 恢复路由器备份时，建议使用清理过 ECM/NSS 残留配置的备份（`etc/config/ecm`、`nss`、`skb_recycler`、`smp_affinity`、`etc/modules.conf` 的 ecm 模块参数），避免与本分支 PPE/flowtable 加速机制冲突
+- 硬件加速生效需固件本体带 PPE 驱动 + `flow_offloading_hw=1` 开关两者齐备；验证命令：
+  ```bash
+  uci get firewall.@defaults[0].flow_offloading_hw   # 应返回 1
+  grep -c HW_OFFLOAD /proc/net/nf_conntrack          # 上网后应 > 0
+  ```
 
 ## 使用方法
 
@@ -28,17 +59,3 @@
 → diy-part1.sh → feeds update/install → diy-part2.sh
 → 载入 .config → make defconfig → make download → make
 ```
-
-## 添加新设备
-
-1. 基于现有分支新建分支（分支名建议 `<设备>-<源码版本>`）
-2. 替换分支内的 `.config`（本地 `make menuconfig` 导出，或先跑通 `make defconfig` 后用 `./scripts/diffconfig.sh` 生成精简种子）
-3. 按需调整 `feeds.conf.default` 和两个 DIY 脚本
-4. workflow 无需改动；若源码仓库/分支不同，修改 workflow 顶部 `env` 的 `REPO_URL` / `REPO_BRANCH`
-
-## 注意事项
-
-- workflow 固定 `ubuntu-24.04`，不要用 `ubuntu-latest`（其默认系统会滚动升级，产物不可复现）
-- 依赖清单与 ImmortalWrt 官方 README 对齐，noble 已移除的包名（如 `libncursesw5-dev`）勿加回
-- `diy-part1.sh` 中对 `feeds/` 目录的改动会被 `feeds update` 覆盖，修改 feed 内的包请在 `diy-part2.sh` 操作
-- `.config` 请使用 LF 换行符，避免 `make defconfig` 解析异常
