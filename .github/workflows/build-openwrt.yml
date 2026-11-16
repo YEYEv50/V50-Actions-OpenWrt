@@ -9,12 +9,6 @@ name: Build OpenWrt
 
 on:
   workflow_dispatch:
-    inputs:
-      upload_release:
-        description: "同时发布到 Releases"
-        type: boolean
-        default: false
-        required: false
 
 # 允许 GITHUB_TOKEN 创建 Release（否则发布步骤报 Resource not accessible by integration）
 permissions:
@@ -137,7 +131,6 @@ jobs:
           path: ${{ env.FIRMWARE }}
 
       - name: 发布到 Releases
-        if: ${{ inputs.upload_release }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: openwrt-${{ env.REPO_BRANCH }}-${{ github.run_number }}
