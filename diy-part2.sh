@@ -21,5 +21,6 @@ git clone https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
 git clone https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
 
 # 按需启用
+#git clone https://github.com/sbwml/packages_lang_golang -b 27.x feeds/packages/lang/golang
 #git clone https://github.com/immortalwrt/homeproxy package/luci-app-homeproxy
 #git clone https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier
