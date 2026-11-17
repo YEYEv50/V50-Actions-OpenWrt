@@ -5,7 +5,7 @@
 sed -i 's/192.168.1.1/192.168.10.1/g' package/base-files/files/bin/config_generate
 
 # 修改主机名
-sed -i 's/OpenWrt/ZN-M2/g' package/base-files/files/bin/config_generate
+sed -i "s/hostname='LibWrt'/hostname='ZN-M2'/g" package/base-files/files/bin/config_generate
 
 # 删除 feeds 自带主题（改用 jerrykuku 新版 luci-theme-argon，已内置 argon-config 功能）
 rm -rf feeds/luci/themes/luci-theme-argon
