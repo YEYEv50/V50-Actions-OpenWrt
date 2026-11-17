@@ -113,7 +113,7 @@ jobs:
         working-directory: ${{ github.workspace }}/openwrt
         run: |
           echo -e "$(nproc) thread compile"
-          make -j"$(nproc)" || make -j1 V=s
+          make -j8 || make -j1 V=s
           echo "COMPILE_END=$(date +%s)" >> "$GITHUB_ENV"
           echo "编译耗时: $(( (COMPILE_END - COMPILE_START) / 60 )) 分钟"
 

@@ -12,7 +12,6 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-passwall2
-#rm -rf feeds/packages/lang/golang
 
 # 独立插件（顶层 package/ 优先于 feed）
 git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
@@ -20,8 +19,3 @@ git clone --depth 1 https://github.com/eamonxg/luci-theme-aurora package/luci-th
 git clone --depth 1 https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
 git clone --depth 1 https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
 git clone --depth 1 https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
-
-# 按需启用
-#git clone https://github.com/sbwml/packages_lang_golang -b 27.x feeds/packages/lang/golang
-#git clone https://github.com/immortalwrt/homeproxy package/luci-app-homeproxy
-#git clone https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier
