@@ -1,4 +1,4 @@
-# V50-Actions-OpenWrt · ZN-M2-25.12 分支
+# V50-Actions-OpenWrt · LiBwrt-25.12 分支
 
 使用 GitHub Actions 云编译 OpenWrt 固件，运行环境 `ubuntu-24.04`，按 **分支管理设备/源码**：每个分支存放各自的 `.config`、`feeds.conf.default` 与 DIY 脚本，workflow 保持通用。
 
