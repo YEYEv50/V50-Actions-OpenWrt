@@ -16,7 +16,7 @@ permissions:
 
 env:
   # 源码仓库与分支（按需修改，须与 .config 匹配）
-  # VIKINGYFY 分支：新 PPE 架构（内核 6.18，无 ECM，NSS 加速走 flowtable 硬件卸载）
+  # VIKINGYFY main 分支：内核 6.18，NSS/ECM 架构，fw4 flowtable 保持关闭
   REPO_URL: https://github.com/VIKINGYFY/immortalwrt
   REPO_BRANCH: main
   # 主目录下的配置文件（相对仓库根目录）
@@ -114,7 +114,7 @@ jobs:
         working-directory: ${{ github.workspace }}/openwrt
         run: |
           echo -e "$(nproc) thread compile"
-          make -j"$(nproc)" || make -j1 V=s
+          make -j8 || make -j1 V=s
           echo "COMPILE_END=$(date +%s)" >> "$GITHUB_ENV"
           echo "编译耗时: $(( (COMPILE_END - COMPILE_START) / 60 )) 分钟"
 
