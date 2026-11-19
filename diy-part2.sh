@@ -20,8 +20,6 @@ git clone --depth 1 https://github.com/eamonxg/luci-app-aurora-config package/lu
 git clone --depth 1 https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
 git clone --depth 1 https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
 
-# ZN-M2 PPE 流量统计（采集器 + LuCI 前端，同一仓库含两个包目录）
-git clone --depth 1 https://github.com/YEYEv50/ppe-traffic.git package/ppe-traffic-repo
-cp -a package/ppe-traffic-repo/ppe-traffic package/ppe-traffic
-cp -a package/ppe-traffic-repo/luci-app-ppe-traffic package/luci-app-ppe-traffic
-rm -rf package/ppe-traffic-repo
+# ZN-M2 PPE 流量统计（采集器 + LuCI 前端，各自独立仓库，根目录即包）
+git clone --depth 1 https://github.com/YEYEv50/ppe-traffic.git package/ppe-traffic
+git clone --depth 1 https://github.com/YEYEv50/luci-app-ppe-traffic.git package/luci-app-ppe-traffic
