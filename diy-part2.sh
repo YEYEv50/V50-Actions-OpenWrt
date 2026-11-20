@@ -20,6 +20,3 @@ git clone --depth 1 https://github.com/eamonxg/luci-app-aurora-config package/lu
 git clone --depth 1 https://github.com/chenmozhijin/luci-app-socat package/luci-app-socat
 git clone --depth 1 https://github.com/bfmen/luci-app-wolplus package/luci-app-wolplus
 
-# ZN-M2 PPE 硬件加速流量统计（Pen Traffic Monitor，根目录含采集器+LuCI前端两个子包）
-git clone --depth 1 https://github.com/YEYEv50/pen-traffic.git package/pen-traffic
-
